@@ -4,29 +4,22 @@ import { userTable  ,userSession } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import { randomBytes,createHmac } from "node:crypto";
 import jwt from 'jsonwebtoken';
+import { authentcationMiddleware , ensureAuthenticated } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.get('/',async (req,res) =>{
-    const user = req.user;
-
-    if(!user){
-        return res.status(401).json({error: 'you arte not logged in'});
-    }
+router.get('/',ensureAuthenticated ,async (req,res) =>{
     return res.json({user});
 });
 
-router.patch('/',async (req,res)=>{
-    const user = req.user;
-        if(!user){
-        return res.status(401).json({error: 'you arte not logged in'});
-    }
+router.patch('/', ensureAuthenticated, async (req,res)=>{
+
     const { name } = req.body;
     
 });
 
 router.post('/signup', async (req,res) =>{
-const { name, email, password } = req.body;
+const { name, email, password ,role } = req.body;
 
 const salt = randomBytes(256).toString('hex');
 const hashedPassword = createHmac('sha256',salt).update(password).digest('hex');
@@ -45,6 +38,7 @@ if(existingUser){
 const [user] = await db.insert(userTable).values({
     name,
     email,
+    role,
     password : hashedPassword,
     salt
 }).returning({ id: userTable.id }); // returns an array
@@ -62,6 +56,7 @@ router.post('/login', async (req,res) =>{
     .select({
         id: userTable.id,
         email: userTable.email,
+        role: userTable.role,
         name: userTable.name,
         password: userTable.password,
         salt: userTable.salt
@@ -82,6 +77,7 @@ router.post('/login', async (req,res) =>{
     const payload = {
         id: user.id,
         name: user.name,
+        role: user.role,
         email: user.email,
     }
 
