@@ -29,3 +29,12 @@ export const ensureAuthenticated = async function (req,res,next) {
 
     next();
 }
+
+export const restrictToRole = function (role) {
+    return function (req, res, next) {
+        if(req.user.role != role){
+            return res.status(401).json({error: 'you are not authorize to access it'});
+        }
+        return next();
+    };
+};
